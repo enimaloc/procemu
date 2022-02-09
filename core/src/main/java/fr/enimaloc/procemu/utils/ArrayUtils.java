@@ -31,4 +31,11 @@ public class ArrayUtils {
         return wrapped;
     }
 
+    public static Character[] wrap(char[] array) {
+        Character[] wrapped = new Character[array.length];
+        for (int i = 0; i < array.length; i++) {
+            wrapped[i] = array[i];
+        }
+        return wrapped;
+    }
 }
