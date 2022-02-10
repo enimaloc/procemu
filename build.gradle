@@ -4,6 +4,7 @@ plugins {
 
 allprojects {
     apply plugin: 'java'
+    apply plugin: 'jacoco'
 
     ext {
         junitVersion = '5.8.2'
@@ -23,6 +24,7 @@ allprojects {
         properties {
             property "sonar.projectKey", System.getenv("SONAR_PROJECT_KEY")
             property "sonar.projectVersion", "0.0.0"
+            property "sonar.coverage.jacoco.xmlReportPaths", "jacoco/${name}.exec"
             if (System.getenv("GITHUB_EVENT_NAME") == "pull_request") {
                 property "sonar.pullrequest.key", System.getenv("GITHUB_SHA")
                 property "sonar.pullrequest.branch", System.getenv("GITHUB_HEAD_REF")
@@ -45,9 +47,16 @@ allprojects {
 
     test {
         useJUnitPlatform()
-        if (System.getenv("CI") == null) {
-            System.out.println("Not on CI, settings working directory to `run/`")
-            workingDir "run/"
+//        if (System.getenv("CI") == null) {
+//            System.out.println("Not on CI, settings working directory to `run/`")
+//            workingDir "run/"
+//        }
+    }
+
+    jacocoTestReport {
+        reports {
+            xml.enabled true
         }
     }
+    test.finalizedBy jacocoTestReport
 }
