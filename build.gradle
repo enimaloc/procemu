@@ -2,7 +2,7 @@ plugins {
     id "org.sonarqube" version "3.3"
 }
 
-allprojects {
+subprojects {
     apply plugin: 'java'
     apply plugin: 'jacoco'
 
@@ -11,6 +11,7 @@ allprojects {
         javaVersion = JavaVersion.VERSION_17
     }
 
+    version file("$projectDir/VERSION").text
     sourceCompatibility = javaVersion
     targetCompatibility = javaVersion
 
@@ -23,8 +24,8 @@ allprojects {
     sonarqube {
         properties {
             property "sonar.projectKey", System.getenv("SONAR_PROJECT_KEY")
-            property "sonar.projectVersion", version
             property "sonar.coverage.jacoco.xmlReportPaths", "jacoco/${name}.exec"
+            property "sonar.projectVersion", "$version"
             if (System.getenv("GITHUB_EVENT_NAME") == "pull_request") {
                 property "sonar.pullrequest.key", System.getenv("GITHUB_SHA")
                 property "sonar.pullrequest.branch", System.getenv("GITHUB_HEAD_REF")

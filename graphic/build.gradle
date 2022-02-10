@@ -6,7 +6,6 @@ plugins {
 }
 
 group 'fr.enimaloc.procemu'
-version '0.0.0-ALPHA'
 
 repositories {
     mavenCentral()
