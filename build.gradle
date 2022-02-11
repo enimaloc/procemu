@@ -2,6 +2,38 @@ plugins {
     id "org.sonarqube" version "3.3"
 }
 
+sonarqube {
+    properties {
+        property "sonar.projectKey", System.getenv("SONAR_PROJECT_KEY")
+        property "sonar.projectVersion", "$version"
+        if (System.getenv("SONAR_HOST_URL") != null) {
+            property "sonar.host.url", System.getenv("SONAR_HOST_URL")
+        }
+        if (System.getenv("GITHUB_EVENT_NAME") == "pull_request") {
+            property "sonar.pullrequest.key", System.getenv("GITHUB_SHA")
+            property "sonar.pullrequest.branch", System.getenv("GITHUB_HEAD_REF")
+            property "sonar.pullrequest.base", System.getenv("GITHUB_REF_NAME")
+        } else if (System.getenv("CI") != null) {
+            property "sonar.branch.name", System.getenv("GITHUB_REF_NAME")
+        } else {
+            property "sonar.branch.name", gitEnv().get("branch.name") + ".local-" + gitEnv().getOrDefault("user.name", System.getenv().get("USERNAME"))
+        }
+
+        int i = 0
+        String modules = ""
+        subprojects {
+            i++
+            property "${project.name}.sonar.projectName", project.name
+            property "${project.name}.sonar.projectBaseDir", project.projectDir
+            property "${project.name}.sonar.projectVersion", "$version"
+            property "${project.name}.sonar.coverage.jacoco.xmlReportPaths", "jacoco/${name}.exec"
+            modules += (i != 1 ? ", " : "") + project.name
+        }
+
+        property "sonar.modules", modules
+    }
+}
+
 subprojects {
     apply plugin: 'java'
     apply plugin: 'jacoco'
@@ -19,21 +51,6 @@ subprojects {
         mavenCentral()
         maven { url 'https://m2.enimaloc.fr/maven/' }
         mavenLocal()
-    }
-
-    sonarqube {
-        properties {
-            property "sonar.projectKey", System.getenv("SONAR_PROJECT_KEY")
-            property "sonar.coverage.jacoco.xmlReportPaths", "jacoco/${name}.exec"
-            property "sonar.projectVersion", "$version"
-            if (System.getenv("GITHUB_EVENT_NAME") == "pull_request") {
-                property "sonar.pullrequest.key", System.getenv("GITHUB_SHA")
-                property "sonar.pullrequest.branch", System.getenv("GITHUB_HEAD_REF")
-                property "sonar.pullrequest.base", System.getenv("GITHUB_REF_NAME")
-            } else {
-                property "sonar.branch.name", System.getenv("GITHUB_REF_NAME")
-            }
-        }
     }
 
     dependencies {
@@ -60,4 +77,24 @@ subprojects {
         }
     }
     test.finalizedBy jacocoTestReport
+
+}
+
+def gitEnv() {
+    def env = new HashMap<String, String>()
+    def proc = "git config -l".execute()
+    proc.in.eachLine { line -> env.put(line.split("=")[0], line.split("=")[1]) }
+    proc.err.eachLine { line -> println line }
+    proc.waitFor()
+    env.put("branch.name", gitBranch())
+    env
+}
+
+def gitBranch() {
+    def branch = ""
+    def proc = "git rev-parse --abbrev-ref HEAD".execute()
+    proc.in.eachLine { line -> branch = line }
+    proc.err.eachLine { line -> println line }
+    proc.waitFor()
+    branch
 }
